@@ -59,7 +59,7 @@ class Tau3MuDataset(InMemoryDataset):
     
     @property
     def raw_file_names(self):
-        return ['DSTau3Mu.pkl', 'minbias.pkl'] if 'mix' in self.setting else [signal_dataset, bkg_dataset]
+        return ['DSTau3Mu.pkl', 'minbias.pkl'] if 'mix' in self.setting else 'data.txt'
 
     @property
     def processed_dir(self) -> str:
@@ -195,7 +195,7 @@ class Tau3MuDataset(InMemoryDataset):
             'mu_hit_global_eta': x[:, 3],
             'mu_hit_bend':       x[:, 4],
             'gen_tau_pt':        data.gen_tau_pt.item() if hasattr(data, 'gen_tau_pt') else 0,
-            'n_gen_tau':         1 if (hasattr(data, 'y') and data.y == 1) else 0,
+            'n_gen_tau':         1 if hasattr(data, 'y') and data.y.numel() > 0 and data.y.item() == 1 else 0, #TODO: TEMPORARY
             'event_id':          int(Path(pt_file_path).stem.split('_')[0].replace('data', ''))
         }
 
@@ -216,16 +216,16 @@ class Tau3MuDataset(InMemoryDataset):
             with open(df_save_path, 'rb') as handle: 
                 return pickle.load(handle)
     
-        pos_path = Path(self.data_dir) / self.signal_folder
-        neg_path = Path(self.data_dir) / self.bkg_folder
+        pos_path = Path(self.data_dir) / Path("raw") /  self.signal_folder
+        neg_path = Path(self.data_dir) / Path("raw") / self.bkg_folder
         
         print(f'[INFO] Processing .pt files from {pos_path} and {neg_path}...')
 
-        pos_list = [pt_to_event_row(f) for f in pos_path.glob("*.pt")]
+        pos_list = [self.pt_to_event_row(f) for f in pos_path.glob("*.pt")]
         pos = pd.DataFrame(pos_list)
         pos['y'] = 1
 
-        neg_list = [pt_to_event_row(f) for f in neg_path.glob("*.pt")]
+        neg_list = [self.pt_to_event_row(f) for f in neg_path.glob("*.pt")]
         neg = pd.DataFrame(neg_list)
         neg['y'] = 0
  
