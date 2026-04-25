@@ -39,15 +39,15 @@ data: #Dataset-specific options. If these change, you must delete the previous p
   conditions:
     
   node_feature_names:
-    - z
-    - eta_rz
-    - r
-    # - u
+    - mu_hit_global_z
+    - mu_hit_global_eta
+    - mu_hit_global_r
+    - mu_hit_bend
     # - v
   
   coords:
-    - eta_rz
-    - phi
+    - mu_hit_global_phi
+    - mu_hit_global_eta
 
 model_name: trans_hept
 model_kwargs:
@@ -76,7 +76,7 @@ optimizer: # Optimization options
   resume: False
   lr: 1.0e-5 # Learning rate of AdamW algorithm
   weight_decay: 0.0
-  batch_size: 1024 # Number of samples to use in each batch
+  batch_size: 32 # TODO: ORIGINALL 1024, CHANGED FOR SMALL SCALE TESTING: Number of samples to use in each batch
   epochs: 100 # Number of epochs to train for
   focal_loss: True # Loss function 
   focal_alpha: 0.2 # Loss function parameter

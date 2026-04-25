@@ -149,9 +149,9 @@ class Tau3MuGNNs:
         pos_loader, neg_loader = data_loader
         neg_loader = cycle(neg_loader)
         loader_len = len(pos_loader)
+        print(f"Expected batches: {loader_len}")
         run_one_batch = self.train_one_batch if phase == 'train' else self.eval_one_batch
         phase = 'test ' if phase == 'test' else phase  # align tqdm desc bar
-
         all_loss_dict, all_clf_logits, all_clf_labels, all_sample_idxs = {}, [], [], []
         pbar = tqdm(pos_loader, total=loader_len)
 

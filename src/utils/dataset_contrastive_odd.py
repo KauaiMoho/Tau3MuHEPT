@@ -448,7 +448,6 @@ def get_data_loaders_contrastive(setting, data_config, batch_size, endcap=1):
     valid_loader = [DataLoader(dataset[dataset.idx_split['pos_valid']], batch_size=batch_size, shuffle=True,drop_last=True),DataLoader(dataset[dataset.idx_split['neg_valid']], batch_size=batch_size, shuffle=True,drop_last=True)]
     test_loader = [DataLoader(dataset[dataset.idx_split['pos_test']], batch_size=batch_size, shuffle=True,drop_last=True),DataLoader(dataset[dataset.idx_split['neg_test']], batch_size=batch_size, shuffle=True,drop_last=True)]
 
-
     return {'train': train_loader, 'valid': valid_loader, 'test': test_loader}, dataset.x_dim, dataset
 
 
