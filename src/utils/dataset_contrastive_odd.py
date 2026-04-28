@@ -184,18 +184,45 @@ class Tau3MuDataset(InMemoryDataset):
         else:
             return Data(x=x, y=y, coords=coords, sample_idx=entry['og_index'], endcap=endcap, only_eval=only_eval)
 
+#For reference. Taken from original HEPT repo pt cloud processing. DEFAULT_FEATURES = 'x' in pt file.
+#DEFAULT_FEATURES = (
+#    "r",
+#    "phi",
+#    "z",
+#    "eta_rz",
+#    "u",
+#    "v",
+#    "charge_frac",
+#    "leta",
+#    "lphi",
+#    "lx",
+#    "ly",
+#    "lz",
+#    "geta",
+#    "gphi",
+#)
+
+# Other features from event pt. file.
+
+#pt
+#eta_pt
+#reconstructable
+#n_hits
+#n_sector_hits
+
     def pt_to_event_row(self, pt_file_path):
         data = torch.load(pt_file_path)
         x = data.x.numpy()
     
         return {
             'mu_hit_global_r':   x[:, 0],
-            'mu_hit_global_phi': x[:, 1],
-            'mu_hit_global_z':   x[:, 2],
+            'mu_hit_global_phi': x[:, 13],
+            'mu_hit_global_z':   x[:, 12],
             'mu_hit_global_eta': x[:, 3],
-            'mu_hit_bend':       x[:, 4],
-            'gen_tau_pt':        data.gen_tau_pt.item() if hasattr(data, 'gen_tau_pt') else 0,
-            'n_gen_tau':         1 if hasattr(data, 'y') and data.y.numel() > 0 and data.y.item() == 1 else 0, #TODO: TEMPORARY
+            'mu_hit_u':          x[:, 4],
+            'mu_hit_v':          x[:, 5],
+            'gen_tau_pt':        0, #TODO: temporary
+            'n_gen_tau':         0, #TODO: temporary
             'event_id':          int(Path(pt_file_path).stem.split('_')[0].replace('data', ''))
         }
 
