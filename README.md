@@ -116,6 +116,82 @@ model.load_state_dict(model_state_dict)
 
 ```
 
+## Reference: full pipeline code for HAMMER
+
+```
+#!/bin/sh
+#SBATCH --job-name=MAIN_ODD_PIPELINE #Job name
+#SBATCH --mail-type=FAIL # Mail events (NONE, BEGIN, END, FAIL, ALL)
+#SBATCH --mail-user=kluitel@purdue.edu # Where to send mail	
+#SBATCH --account=cms
+#SBATCH --output=/home/kluitel/main_out/main-%A.out	# Name output file 
+
+NEVENTS=2000
+
+pwd; date; hostname
+
+cd /home/kluitel/acts/Examples/Scripts/Python/
+
+source /cvmfs/sft.cern.ch/lcg/views/LCG_107/x86_64-el8-gcc11-opt/setup.sh
+module load gcc/14.1.0
+source ../../../build/python/setup.sh
+
+echo "Will run full Tau3Mu Generation and model training  with ACTS DATA"
+
+rm /depot/cms/kluitel/HEPT/data/tracking/raw/raw_signal/*
+rm /depot/cms/kluitel/HEPT/data/tracking/raw/raw_bkg/*
+
+python full_chain_odd_tau3mu.py --ttbar --events ${NEVENTS} --rs 1 --ttbar-pu 0 --no-reco --output /depot/cms/kluitel/HEPT/data/tracking/raw/raw_signal &
+PID1=$!
+
+python full_chain_odd_minbias.py --ttbar --events ${NEVENTS} --ttbar-pu 0 --no-reco --output /depot/cms/kluitel/HEPT/data/tracking/raw/raw_bkg &
+PID2=$!
+
+wait $PID1 $PID2
+
+unset PYTHONHOME
+unset PYTHONPATH
+unset LD_LIBRARY_PATH
+
+cd /depot/cms/kluitel/HEPT/data/tracking/raw/
+
+module load anaconda
+conda activate HEPT_env
+
+rm ./formatted_signal/*
+rm ./formatted_bkg/*
+
+python event_formatter.py signal &
+PID3=$!
+
+python event_formatter.py bkg &
+PID4=$!
+
+wait $PID3 $PID4
+
+rm /depot/cms/kluitel/Tau3MuHEPT/data/raw/data_signal/*
+rm /depot/cms/kluitel/Tau3MuHEPT/data/raw/data_bkg/*
+
+python build_point_clouds.py signal &
+PID5=$!
+
+python build_point_clouds.py bkg &
+PID6=$!
+
+wait $PID5 $PID6
+
+conda deactivate
+cd /depot/cms/kluitel/Tau3MuHEPT/
+conda activate tau3mu_hept
+
+rm -rf ./data/scores
+rm -rf ./data/processed-HEPT_full_13x_contrastive_odd_d_a
+
+python src/train_contrastive.py --setting HEPT_full_13x_contrastive_odd --cuda 0
+
+echo "Finished!"
+```
+
 
 
 
