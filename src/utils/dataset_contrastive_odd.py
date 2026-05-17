@@ -108,16 +108,73 @@ class Tau3MuDataset(InMemoryDataset):
         # TODO: Figure out how to not require these to be global.
         
         if 'half' in self.setting:
+            global pos_maxs
+            global pos_mins
+            global neg_maxs
+            global neg_mins
             
             for name in ['mu_hit_nlog_eta', 'mu_hit_nlog_phi', 'mu_hit_dist', 'mu_hit_dot']:
                 if name in self.feature_names:
                     self.feature_names.remove(name)
+            
+            # Need separate mins/maxs for each endcap
+            
+            pos_maxs = [[] for feature in self.feature_names]
+            pos_mins = [[] for feature in self.feature_names]
+            
+            neg_maxs = [[] for feature in self.feature_names]
+            neg_mins = [[] for feature in self.feature_names]
+            
+            
+            #self.feature_names = np.array(feature_names)
+    
+            
+            for i in range(len(df)):
+                event = df.iloc[i]
+                for j,feature in enumerate(self.feature_names):
+                    var = event[feature]
+                    endcaps = np.sign(event[z])
+                    
+                    pos_col = var[endcaps==1]
+                    neg_col = var[endcaps==-1]
+                    
+                    if np.sum(endcaps==1) > 0:
+                        pos_maxs[j].append(np.max(pos_col))
+                        pos_mins[j].append(np.min(pos_col))
+                    
+                    if np.sum(endcaps==-1) > 0:
+                        neg_maxs[j].append(np.max(neg_col))
+                        neg_mins[j].append(np.min(neg_col))
+                        
+                        
+            pos_maxs = np.array(pos_maxs)
+            pos_maxs = np.max(pos_maxs, axis=1)
+            neg_maxs = np.array(neg_maxs)
+            neg_maxs = np.max(neg_maxs, axis=1)
+            
+            pos_mins = np.array(pos_mins)
+            pos_mins = np.min(pos_mins, axis=1)
+            neg_mins = np.array(neg_mins)
+            neg_mins = np.min(neg_mins, axis=1)
             
             pos_data_list = []
             neg_data_list = []
             data_list = [pos_data_list,neg_data_list]
             
         else:
+            
+            global full_maxs
+            global full_mins
+            
+            full_maxs = []
+            full_mins = []
+            
+            for j,feature in enumerate(self.feature_names):
+                
+                feat = df[feature].to_numpy()
+            
+                full_maxs.append(np.max(np.concatenate(feat)))
+                full_mins.append(np.min(np.concatenate(feat)))
             
             data_list = []
             
@@ -169,6 +226,19 @@ class Tau3MuDataset(InMemoryDataset):
                     only_eval=True
         else:
             only_eval = False
+
+        #NORM - COMMENT IF NEEDED
+        if endcap == 0:
+            maxs = full_maxs
+            mins = full_mins
+        elif endcap == 1:
+            maxs = pos_maxs
+            mins = pos_mins
+        elif endcap == -1:
+            maxs = neg_maxs
+            mins = neg_mins
+        for i, feature in enumerate(self.feature_names): # Min-max norm
+            entry[feature] = (entry[feature] - mins[i]) / (maxs[i] - mins[i])
         
         x = Tau3MuDataset.get_node_features(entry, self.node_feature_names)
         coords = self.get_coors_for_hits(entry)
@@ -223,7 +293,7 @@ class Tau3MuDataset(InMemoryDataset):
             'mu_hit_v':          x[:, 5],
             'gen_tau_pt':        0, #TODO: temporary
             'n_gen_tau':         0, #TODO: temporary
-            'event_id':          int(Path(pt_file_path).stem.split('_')[0].replace('data', ''))
+            'event_id':          int(Path(pt_file_path).stem.split('_')[-1])
         }
 
     def get_df_save_path(self):

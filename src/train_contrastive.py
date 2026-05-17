@@ -149,6 +149,11 @@ class Tau3MuGNNs:
         pos_loader, neg_loader = data_loader
         neg_loader = cycle(neg_loader)
         loader_len = len(pos_loader)
+
+        avg_loss = 0.0
+        auroc = 0.0
+        recall = 0.0
+
         print(f"Expected batches: {loader_len}")
         run_one_batch = self.train_one_batch if phase == 'train' else self.eval_one_batch
         phase = 'test ' if phase == 'test' else phase  # align tqdm desc bar
@@ -159,8 +164,6 @@ class Tau3MuGNNs:
             neg_batch = next(neg_loader)
             
             loss_dict, clf_logits = run_one_batch((pos_batch,neg_batch))
-            print (pos_batch.y.cpu())
-            print (neg_batch.y.cpu())
             y = torch.cat([pos_batch.y.cpu(), neg_batch.y.cpu()])
             sample_idxs = torch.cat([pos_batch.sample_idx.cpu(), neg_batch.sample_idx.cpu()])
             
@@ -239,6 +242,49 @@ class Tau3MuGNNs:
         
         print('Evaluating Performance')
 
+def diagnose_data(config, setting, device):
+    from utils import get_data_loaders_contrastive as get_data_loaders
+    
+    print("="*50)
+    print("DATA DIAGNOSTICS")
+    print("="*50)
+    
+    data_loaders, x_dim, dataset = get_data_loaders(
+        setting, config['data'], 
+        config['optimizer']['batch_size'], 
+        endcap=config['model_kwargs']['endcap']
+    )
+    
+    print(f"Feature dimension: {x_dim}")
+    print(f"Batch size: {config['optimizer']['batch_size']}")
+    
+    # Check first batch
+    pos_loader, neg_loader = data_loaders['train']
+    pos_batch = next(iter(pos_loader))
+    neg_batch = next(iter(neg_loader))
+    
+    print(f"\nPositive batch:")
+    print(f"  x shape: {pos_batch.x.shape}")
+    print(f"  coords shape: {pos_batch.coords.shape}")
+    print(f"  batch shape: {pos_batch.batch.shape}")
+    print(f"  Num graphs: {len(torch.unique(pos_batch.batch))}")
+    print(f"  Avg nodes per graph: {pos_batch.x.shape[0] / len(torch.unique(pos_batch.batch)):.1f}")
+    print(f"  Memory estimate: {pos_batch.x.element_size() * pos_batch.x.nelement() / 1e6:.2f} MB")
+    
+    print(f"\nNegative batch:")
+    print(f"  x shape: {neg_batch.x.shape}")
+    print(f"  Num graphs: {len(torch.unique(neg_batch.batch))}")
+    print(f"  Avg nodes per graph: {neg_batch.x.shape[0] / len(torch.unique(neg_batch.batch)):.1f}")
+    
+    # Check for bad values
+    print(f"\nData quality:")
+    print(f"  NaN in pos x: {torch.isnan(pos_batch.x).any()}")
+    print(f"  Inf in pos x: {torch.isinf(pos_batch.x).any()}")
+    print(f"  NaN in coords: {torch.isnan(pos_batch.coords).any()}")
+    print(f"  Inf in coords: {torch.isinf(pos_batch.coords).any()}")
+    
+    print("="*50)
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Train Tau3MuGNNs')
@@ -277,6 +323,8 @@ def main():
     log_path = Path(config['data']['log_dir']) / log_name
     log_path.mkdir(parents=True, exist_ok=True)
     shutil.copy(f'{path_to_config}', log_path / 'config.yml')
+    
+    diagnose_data(config, setting, device)
 
     Tau3MuGNNs(config, device, log_path, setting).train()
     
