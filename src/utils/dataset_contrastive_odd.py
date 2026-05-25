@@ -80,12 +80,11 @@ class Tau3MuDataset(InMemoryDataset):
         raise KeyboardInterrupt
 
     def process(self):
-        print ("are we processing?????")
         df = self.get_df()
         
         df = df.sample(frac=1, random_state=42).reset_index(drop=False) # Shuffle the dataset. Set seed to make results reproducible
         df = df.rename(columns={'index': 'og_index'}) # Store the indices of the original dataset for prediction analysis
-        
+       
         if self.debug:
             df = df.iloc[:100]
         
@@ -237,8 +236,8 @@ class Tau3MuDataset(InMemoryDataset):
         elif endcap == -1:
             maxs = neg_maxs
             mins = neg_mins
-        for i, feature in enumerate(self.feature_names): # Min-max norm
-            entry[feature] = (entry[feature] - mins[i]) / (maxs[i] - mins[i])
+        # for i, feature in enumerate(self.feature_names): # Min-max norm
+        #    entry[feature] = (entry[feature] - mins[i]) / (maxs[i] - mins[i])
         
         x = Tau3MuDataset.get_node_features(entry, self.node_feature_names)
         coords = self.get_coors_for_hits(entry)
@@ -283,17 +282,18 @@ class Tau3MuDataset(InMemoryDataset):
     def pt_to_event_row(self, pt_file_path):
         data = torch.load(pt_file_path)
         x = data.x.numpy()
+        eid = int(Path(pt_file_path).stem.split('_')[0].replace("data",""))
     
         return {
             'mu_hit_global_r':   x[:, 0],
-            'mu_hit_global_phi': x[:, 13],
-            'mu_hit_global_z':   x[:, 12],
+            'mu_hit_global_phi': x[:, 1],
+            'mu_hit_global_z':   x[:, 2],
             'mu_hit_global_eta': x[:, 3],
             'mu_hit_u':          x[:, 4],
             'mu_hit_v':          x[:, 5],
             'gen_tau_pt':        0, #TODO: temporary
             'n_gen_tau':         0, #TODO: temporary
-            'event_id':          int(Path(pt_file_path).stem.split('_')[-1])
+            'event_id':          eid
         }
 
     def get_df_save_path(self):
@@ -480,11 +480,12 @@ class Tau3MuDataset(InMemoryDataset):
         if entry['n_mu_hit'] < 1: # Only return an entry if it has hits left
             return None
         
-        if masked_entry['y'] == 1: # If signal event, only return hits on tau endcap
-            if ((masked_entry['gen_tau_eta'] * entry[eta]) > 0).sum() == entry['n_mu_hit']: 
-                entry['y'] = 1
-            else:
-                entry['y'] = 0
+        #TODO: COMMENTED OUT!
+        #if masked_entry['y'] == 1: # If signal event, only return hits on tau endcap
+        #    if ((masked_entry['gen_tau_eta'] * entry[eta]) > 0).sum() == entry['n_mu_hit']: 
+        #        entry['y'] = 1
+        #    else:
+        #        entry['y'] = 0
         
         return entry
 
