@@ -540,6 +540,35 @@ def get_data_loaders_contrastive(setting, data_config, batch_size, endcap=1):
         idx = 1
     
     dataset = Tau3MuDataset(setting, data_config, idx)
+
+    sig_idx = dataset.idx_split['pos_train'][0]
+    bkg_idx = dataset.idx_split['neg_train'][0]
+
+    sig = dataset[sig_idx]
+    bkg = dataset[bkg_idx]
+
+    print("=== SIGNAL ===")
+    print(sig)
+    print(f"x shape: {sig.x.shape}")
+    print(f"y: {sig.y}")
+    print(f"coords shape: {sig.coords.shape}")
+
+    print("\n=== BACKGROUND ===")
+    print(bkg)
+    print(f"x shape: {bkg.x.shape}")
+    print(f"y: {bkg.y}")
+    print(f"coords shape: {bkg.coords.shape}")
+
+    sig_indices = dataset.idx_split['pos_train'][:100]
+    bkg_indices = dataset.idx_split['neg_train'][:100]
+
+    sig_n_hits = [dataset[i].x.shape[0] for i in sig_indices]
+    bkg_n_hits = [dataset[i].x.shape[0] for i in bkg_indices]
+
+    print(f"\n=== HIT MULTIPLICITY (first 100 each) ===")
+    print(f"Signal:     mean={np.mean(sig_n_hits):.1f}, std={np.std(sig_n_hits):.1f}, range=[{min(sig_n_hits)}, {max(sig_n_hits)}]")
+    print(f"Background: mean={np.mean(bkg_n_hits):.1f}, std={np.std(bkg_n_hits):.1f}, range=[{min(bkg_n_hits)}, {max(bkg_n_hits)}]")
+
     print('Retrieving Data Loaders from:'+dataset.processed_paths[idx])
 
     train_loader = [DataLoader(dataset[dataset.idx_split['pos_train']], batch_size=batch_size, shuffle=True,drop_last=True),DataLoader(dataset[dataset.idx_split['neg_train']], batch_size=batch_size, shuffle=True,drop_last=True)]

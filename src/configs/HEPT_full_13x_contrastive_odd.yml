@@ -34,7 +34,7 @@ data: #Dataset-specific options. If these change, you must delete the previous p
     train: 0.7
     valid: 0.15
     test: 0.15
-  pos_neg_ratio: 0.5 # Ratio of signal samples to background samples. Use 0 to use as much signal/background as possible.
+  pos_neg_ratio: 0.0 # Ratio of signal samples to background samples. Use 0 to use as much signal/background as possible.
         #CHANGED ABOVE FROM 0.9 to 0.0!
   
   conditions:
@@ -77,8 +77,8 @@ optimizer: # Optimization options
   resume: False
   lr: 1.0e-5 # Learning rate of AdamW algorithm
   weight_decay: 0.0
-  batch_size: 128 # TODO: ORIGINALLY 1024, CHANGED FOR SMALL SCALE TESTING: Number of samples to use in each batch
-  epochs: 50  # Number of epochs to train for
+  batch_size: 16 # TODO: ORIGINALLY 1024, CHANGED FOR SMALL SCALE TESTING: Number of samples to use in each batch
+  epochs: 100  # Number of epochs to train for
   focal_loss: True # Loss function 
   focal_alpha: 0.2 # Loss function parameter
   focal_gamma: 0. # Loss function parameter
